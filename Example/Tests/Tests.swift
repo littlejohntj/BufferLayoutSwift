@@ -14,13 +14,15 @@ class Tests: XCTestCase {
     }
     
     func testExample() throws {
-        let test = try Test(buffer: Data([1,2]))
+        let test = try Test(buffer: Data([1,2,3,4]))
         XCTAssertEqual(test.x, 1)
         XCTAssertEqual(test.y, 2)
+        XCTAssertEqual(test.z, 1027)
     }
 }
 
 struct Test: BufferLayout {
     var x: UInt8
     var y: UInt8
+    var z: UInt16
 }

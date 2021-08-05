@@ -8,25 +8,36 @@
 import Foundation
 import Runtime
 
+// MARK: - Errors
 public enum Error: Swift.Error {
     case bytesLengthIsNotValid
     case propertyIsNotBufferLayoutProperty(propertyName: String)
 }
 
+// MARK: - BufferLayoutProperties
 public protocol BufferLayoutProperty {
     static var length: Int {get}
     static func fromBytes(bytes: [UInt8]) throws -> Self
 }
 
-extension UInt8: BufferLayoutProperty {
-    public static var length: Int {1}
-    
-    public static func fromBytes(bytes: [UInt8]) throws -> UInt8 {
-        guard bytes.count == 1 else {throw Error.bytesLengthIsNotValid}
-        return bytes.first!
+extension UInt8: BufferLayoutProperty {}
+extension UInt16: BufferLayoutProperty {}
+extension UInt32: BufferLayoutProperty {}
+extension UInt64: BufferLayoutProperty {}
+
+extension FixedWidthInteger {
+    public static var length: Int {
+        MemoryLayout<Self>.size
+    }
+    public static func fromBytes(bytes: [UInt8]) throws -> Self {
+        guard bytes.count == length else {
+            throw Error.bytesLengthIsNotValid
+        }
+        return bytes.toUInt(ofType: Self.self)
     }
 }
 
+// MARK: - BufferLayout
 public protocol BufferLayout {}
 
 public extension BufferLayout {
@@ -39,6 +50,9 @@ public extension BufferLayout {
             let instanceInfo = try typeInfo(of: property.type)
             if let t = instanceInfo.type as? BufferLayoutProperty.Type
             {
+                guard pointer+t.length <= data.bytes.count else {
+                    throw Error.bytesLengthIsNotValid
+                }
                 let newValue = try t.fromBytes(
                     bytes: data
                         .bytes[pointer..<pointer+t.length]
@@ -57,6 +71,7 @@ public extension BufferLayout {
     }
 }
 
+// MARK: - Helpers
 private extension Data {
     var bytes: Array<UInt8> {
         Array(self)
@@ -66,5 +81,21 @@ private extension Data {
 private extension ArraySlice {
     func toArray() -> [Element] {
         Array(self)
+    }
+}
+
+private extension Array where Element == UInt8 {
+    func toUInt<T: FixedWidthInteger>(ofType: T.Type) -> T {
+        let data = Data(self)
+        return T(littleEndian: data.withUnsafeBytes { $0.pointee })
+    }
+    
+    func toInt() -> Int {
+        var value: Int = 0
+        for byte in self {
+            value = value << 8
+            value = value | Int(byte)
+        }
+        return value
     }
 }
