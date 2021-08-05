@@ -1,20 +1,26 @@
 import XCTest
 import BufferLayoutSwift
+import Runtime
 
 // MARK: - Structs
 private struct UIntTest: BufferLayout {
     // parsable
-    var uint8: UInt8
-    var uint16: UInt16
-    var uint32: UInt32
-    var uint64: UInt64
-    var int32: Int32
+    let uint8: UInt8
+    let uint16: UInt16
+    let uint32: UInt32
+    let uint64: UInt64
+    let int32: Int32
     
     // non-parsable part
     var optionalString: String?
-    var string: String
+    let string: String
     var exGetter: Int {0}
     func exFunc() {}
+    
+    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout UIntTest) throws {
+        let stringProp = try typeInfo.property(named: "string")
+        try stringProp.set(value: "test", on: &currentInstance)
+    }
 }
 
 private struct UnsupportedIntTest: BufferLayout {
@@ -41,9 +47,6 @@ class DecodingBufferLayoutTests: XCTestCase {
     func testDecodingFailed() throws {
         // not enough bytes
         XCTAssertThrowsError(try UIntTest(buffer: Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0])))
-        
-        // property not supported
-        XCTAssertThrowsError(try UnsupportedIntTest(buffer: Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0,0,1,3,0,3,1,0,0])))
     }
     
     func testDecodingBuildInSupportedTypes() throws {
@@ -53,5 +56,6 @@ class DecodingBufferLayoutTests: XCTestCase {
         XCTAssertEqual(test.uint32, 259)
         XCTAssertEqual(test.uint64, 72057598383227649)
         XCTAssertEqual(test.uint32, 259)
+        XCTAssertEqual(test.string, "test")
     }
 }

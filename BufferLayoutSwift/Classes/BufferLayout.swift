@@ -43,7 +43,9 @@ extension FixedWidthInteger {
 }
 
 // MARK: - BufferLayout
-public protocol BufferLayout {}
+public protocol BufferLayout {
+    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws
+}
 
 public extension BufferLayout {
     init(buffer data: Data) throws {
@@ -70,7 +72,12 @@ public extension BufferLayout {
                 pointer += t.numberOfBytes
             }
         }
+        try Self.injectOtherProperties(typeInfo: info, currentInstance: &selfInstance)
         self = selfInstance
+    }
+    
+    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws {
+        
     }
 }
 
