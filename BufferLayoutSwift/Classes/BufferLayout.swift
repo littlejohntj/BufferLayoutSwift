@@ -93,7 +93,7 @@ private extension ArraySlice {
 private extension Array where Element == UInt8 {
     func toUInt<T: FixedWidthInteger>(ofType: T.Type) -> T {
         let data = Data(self)
-        return T(littleEndian: data.withUnsafeBytes { $0.pointee })
+        return T(littleEndian: data.withUnsafeBytes { $0.load(as: T.self) })
     }
     
     func toInt() -> Int {

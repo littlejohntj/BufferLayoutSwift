@@ -29,6 +29,7 @@ BufferLayoutSwift helps you turn sequence of data into struct by conforming this
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '12.0'
+  s.swift_version = '5.0'
 
   s.source_files = 'BufferLayoutSwift/Classes/**/*'
   
