@@ -16,7 +16,7 @@ public enum Error: Swift.Error {
 
 // MARK: - BufferLayoutProperties
 public protocol BufferLayoutProperty {
-    static var length: Int {get}
+    static var numberOfBytes: Int {get}
     static func fromBytes(bytes: [UInt8]) throws -> Self
 }
 
@@ -31,11 +31,11 @@ extension Int32: BufferLayoutProperty {}
 extension Int64: BufferLayoutProperty {}
 
 extension FixedWidthInteger {
-    public static var length: Int {
+    public static var numberOfBytes: Int {
         MemoryLayout<Self>.size
     }
     public static func fromBytes(bytes: [UInt8]) throws -> Self {
-        guard bytes.count == length else {
+        guard bytes.count == numberOfBytes else {
             throw Error.bytesLengthIsNotValid
         }
         return bytes.toUInt(ofType: Self.self)
@@ -52,22 +52,23 @@ public extension BufferLayout {
         
         var pointer: Int = 0
         for property in info.properties {
+            print(property.name)
             let instanceInfo = try typeInfo(of: property.type)
             if let t = instanceInfo.type as? BufferLayoutProperty.Type
             {
-                guard pointer+t.length <= data.bytes.count else {
+                guard pointer+t.numberOfBytes <= data.bytes.count else {
                     throw Error.bytesLengthIsNotValid
                 }
                 let newValue = try t.fromBytes(
                     bytes: data
-                        .bytes[pointer..<pointer+t.length]
+                        .bytes[pointer..<pointer+t.numberOfBytes]
                         .toArray()
                 )
                 
                 let newProperty = try info.property(named: property.name)
                 try newProperty.set(value: newValue, on: &selfInstance)
                 
-                pointer += t.length
+                pointer += t.numberOfBytes
             } else {
                 throw Error.unsupportedType(type: property.type, propertyName: property.name)
             }
