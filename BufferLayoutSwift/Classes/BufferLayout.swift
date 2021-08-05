@@ -11,7 +11,7 @@ import Runtime
 // MARK: - Errors
 public enum Error: Swift.Error {
     case bytesLengthIsNotValid
-    case propertyIsNotBufferLayoutProperty(propertyName: String)
+    case unsupportedType(type: Any.Type, propertyName: String)
 }
 
 // MARK: - BufferLayoutProperties
@@ -24,6 +24,11 @@ extension UInt8: BufferLayoutProperty {}
 extension UInt16: BufferLayoutProperty {}
 extension UInt32: BufferLayoutProperty {}
 extension UInt64: BufferLayoutProperty {}
+
+extension Int8: BufferLayoutProperty {}
+extension Int16: BufferLayoutProperty {}
+extension Int32: BufferLayoutProperty {}
+extension Int64: BufferLayoutProperty {}
 
 extension FixedWidthInteger {
     public static var length: Int {
@@ -64,7 +69,7 @@ public extension BufferLayout {
                 
                 pointer += t.length
             } else {
-                throw Error.propertyIsNotBufferLayoutProperty(propertyName: property.name)
+                throw Error.unsupportedType(type: property.type, propertyName: property.name)
             }
         }
         self = selfInstance
