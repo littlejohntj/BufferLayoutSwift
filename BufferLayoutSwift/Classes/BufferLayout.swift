@@ -14,14 +14,14 @@ public enum Error: Swift.Error {
 }
 
 public protocol BufferLayoutProperty {
-    var length: Int {get}
-    func fromBytes(bytes: [UInt8]) throws -> Self
+    static var length: Int {get}
+    static func fromBytes(bytes: [UInt8]) throws -> Self
 }
 
 extension UInt8: BufferLayoutProperty {
-    public var length: Int {1}
+    public static var length: Int {1}
     
-    public func fromBytes(bytes: [UInt8]) throws -> UInt8 {
+    public static func fromBytes(bytes: [UInt8]) throws -> UInt8 {
         guard bytes.count == 1 else {throw Error.bytesLengthIsNotValid}
         return bytes.first!
     }
@@ -36,17 +36,19 @@ public extension BufferLayout {
         
         var pointer: Int = 0
         for property in info.properties {
-            let instance = try createInstance(of: property.type)
-            
-            if instance is BufferLayoutProperty {
-                let bufferLayoutProperty = instance as! BufferLayoutProperty
-                
-                let newValue = try bufferLayoutProperty.fromBytes(bytes: data.bytes[pointer..<pointer+bufferLayoutProperty.length].toArray())
+            let instanceInfo = try typeInfo(of: property.type)
+            if let t = instanceInfo.type as? BufferLayoutProperty.Type
+            {
+                let newValue = try t.fromBytes(
+                    bytes: data
+                        .bytes[pointer..<pointer+t.length]
+                        .toArray()
+                )
                 
                 let newProperty = try info.property(named: property.name)
                 try newProperty.set(value: newValue, on: &selfInstance)
                 
-                pointer += bufferLayoutProperty.length
+                pointer += t.length
             } else {
                 throw Error.propertyIsNotBufferLayoutProperty(propertyName: property.name)
             }
