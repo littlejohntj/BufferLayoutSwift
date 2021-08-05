@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-BufferLayoutSwift helps you turn data with orders into one struct by conforming this struct to BufferLayout, with all properties conforming to BufferLayoutProperties.
+BufferLayoutSwift helps you turn sequence of data into struct by conforming this struct to BufferLayout, with all properties conforming to BufferLayoutProperties.
                        DESC
 
   s.homepage         = 'https://github.com/bigearsenal/BufferLayoutSwift'
