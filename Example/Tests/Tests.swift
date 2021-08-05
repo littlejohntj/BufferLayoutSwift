@@ -14,7 +14,7 @@ class Tests: XCTestCase {
     }
     
     func testExample() throws {
-        let test = try Test(data: Data([1,2]))
+        let test = try Test(buffer: Data([1,2]))
         XCTAssertEqual(test.x, 1)
         XCTAssertEqual(test.y, 2)
     }

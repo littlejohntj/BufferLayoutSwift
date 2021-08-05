@@ -30,7 +30,7 @@ extension UInt8: BufferLayoutProperty {
 public protocol BufferLayout {}
 
 public extension BufferLayout {
-    init(data: Data) throws {
+    init(buffer data: Data) throws {
         let info = try typeInfo(of: Self.self)
         var selfInstance: Self = try createInstance()
         
