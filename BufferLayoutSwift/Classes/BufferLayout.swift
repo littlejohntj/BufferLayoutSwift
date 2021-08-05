@@ -52,7 +52,6 @@ public extension BufferLayout {
         
         var pointer: Int = 0
         for property in info.properties {
-            print(property.name)
             let instanceInfo = try typeInfo(of: property.type)
             if let t = instanceInfo.type as? BufferLayoutProperty.Type
             {
@@ -69,8 +68,6 @@ public extension BufferLayout {
                 try newProperty.set(value: newValue, on: &selfInstance)
                 
                 pointer += t.numberOfBytes
-            } else {
-                throw Error.unsupportedType(type: property.type, propertyName: property.name)
             }
         }
         self = selfInstance
