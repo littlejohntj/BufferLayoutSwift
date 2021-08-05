@@ -52,9 +52,22 @@ extension Int32: BufferLayoutProperty {}
 extension Int64: BufferLayoutProperty {}
 ```
 
-You can define custom `BufferLayoutProperty` by conforming your type to `BufferLayoutProperty`:
+You can define custom `BufferLayoutProperty` by conforming your type to `BufferLayoutProperty`. For example: get `PublicKey` from buffer layout with 32 bytes:
 
-
+```swift
+extension PublicKey: BufferLayoutProperty {
+    public static var numberOfBytes: Int {
+        32
+    }
+    public static func fromBytes(bytes: [UInt8]) throws -> PublicKey {
+        guard bytes.count == numberOfBytes else {
+            throw BufferLayoutSwift.Error.bytesLengthIsNotValid
+        }
+        // return public key from data
+        ...
+    }
+}
+```
 
 ## Dependencies
 1. 'Runtime'
