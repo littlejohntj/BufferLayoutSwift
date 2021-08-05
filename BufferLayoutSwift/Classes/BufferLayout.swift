@@ -42,9 +42,32 @@ extension FixedWidthInteger {
     }
 }
 
+extension Bool: BufferLayoutProperty {
+    public static var numberOfBytes: Int { 1 }
+    
+    public static func fromBytes(bytes: [UInt8]) throws -> Bool {
+        guard bytes.count == 1 else {
+            throw Error.bytesLengthIsNotValid
+        }
+        return bytes.first! != 0
+    }
+}
+
+extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
+    public static var numberOfBytes: Int {
+        Wrapped.numberOfBytes
+    }
+    
+    public static func fromBytes(bytes: [UInt8]) throws -> Optional<Wrapped> {
+        guard bytes.count == numberOfBytes else {return nil}
+        return try? Wrapped.fromBytes(bytes: bytes)
+    }
+}
+
 // MARK: - BufferLayout
 public protocol BufferLayout {
     static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws
+    static var excludedPropertyNames: [String] {get}
 }
 
 public extension BufferLayout {
@@ -55,7 +78,8 @@ public extension BufferLayout {
         var pointer: Int = 0
         for property in info.properties {
             let instanceInfo = try typeInfo(of: property.type)
-            if let t = instanceInfo.type as? BufferLayoutProperty.Type
+            if let t = instanceInfo.type as? BufferLayoutProperty.Type,
+               !Self.excludedPropertyNames.contains(property.name)
             {
                 guard pointer+t.numberOfBytes <= data.bytes.count else {
                     throw Error.bytesLengthIsNotValid
@@ -76,9 +100,8 @@ public extension BufferLayout {
         self = selfInstance
     }
     
-    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws {
-        
-    }
+    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws {}
+    static var excludedPropertyNames: [String] {[]}
 }
 
 // MARK: - Helpers

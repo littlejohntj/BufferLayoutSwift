@@ -6,10 +6,11 @@ import Runtime
 private struct UIntTest: BufferLayout {
     // parsable
     let uint8: UInt8
-    let uint16: UInt16
-    let uint32: UInt32
+    let uint16: UInt16 // excluded -> default to 0
+    let uint32: UInt32?
     let uint64: UInt64
     let int32: Int32
+    let bool: Bool
     
     // non-parsable part
     var optionalString: String?
@@ -21,6 +22,8 @@ private struct UIntTest: BufferLayout {
         let stringProp = try typeInfo.property(named: "string")
         try stringProp.set(value: "test", on: &currentInstance)
     }
+    
+    static var excludedPropertyNames: [String] {["uint16"]}
 }
 
 private struct UnsupportedIntTest: BufferLayout {
@@ -50,12 +53,13 @@ class DecodingBufferLayoutTests: XCTestCase {
     }
     
     func testDecodingBuildInSupportedTypes() throws {
-        let test = try UIntTest(buffer: Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0,1,1,0,0,1]))
+        let test = try UIntTest(buffer: Data([1,3,1,0,0,1,3,0,3,1,0,0,1,1,0,0,1,0]))
         XCTAssertEqual(test.uint8, 1)
-        XCTAssertEqual(test.uint16, 3)
+        XCTAssertEqual(test.uint16, 0) // excluded
         XCTAssertEqual(test.uint32, 259)
         XCTAssertEqual(test.uint64, 72057598383227649)
         XCTAssertEqual(test.uint32, 259)
+        XCTAssertEqual(test.bool, false)
         XCTAssertEqual(test.string, "test")
     }
 }
