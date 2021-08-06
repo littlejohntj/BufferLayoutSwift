@@ -9,12 +9,26 @@ import Foundation
 
 public protocol BufferLayoutVectorType {
     static var numberOfBytesToStoreLength: Int {get}
-    static func fromBytes(bytes: [UInt8]) throws -> Self
+    static func fromBytes(bytes: [UInt8], length: Int) throws -> Self
+    var length: Int {get}
+    var bytes: [UInt8] {get}
+    func encode() throws -> Data
+}
+
+extension BufferLayoutVectorType {
+    public func encode() throws -> Data {
+        var data = Data(capacity: Self.numberOfBytesToStoreLength + bytes.count)
+        var int = length
+        data.append(contentsOf: Data(bytes: &int, count: Self.numberOfBytesToStoreLength))
+        data.append(contentsOf: bytes)
+        return data
+    }
 }
 
 public protocol BufferLayoutProperty {
     static var numberOfBytes: Int {get}
     static func fromBytes(bytes: [UInt8]) throws -> Self
+    func encode() throws -> Data
 }
 
 extension UInt8: BufferLayoutProperty {}
@@ -37,6 +51,11 @@ extension FixedWidthInteger {
         }
         return bytes.toUInt(ofType: Self.self)
     }
+    
+    public func encode() throws -> Data {
+        var int = self
+        return Data(bytes: &int, count: MemoryLayout<Self>.size)
+    }
 }
 
 extension Bool: BufferLayoutProperty {
@@ -48,6 +67,11 @@ extension Bool: BufferLayoutProperty {
         }
         return bytes.first! != 0
     }
+    
+    public func encode() throws -> Data {
+        var int: [UInt8] = [self ? 1: 0]
+        return Data(bytes: &int, count: 1)
+    }
 }
 
 extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
@@ -58,6 +82,11 @@ extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
     public static func fromBytes(bytes: [UInt8]) throws -> Optional<Wrapped> {
         guard bytes.count == numberOfBytes else {return nil}
         return try? Wrapped.fromBytes(bytes: bytes)
+    }
+    
+    public func encode() throws -> Data {
+        guard let self = self else {return Data()}
+        return try self.encode()
     }
 }
 

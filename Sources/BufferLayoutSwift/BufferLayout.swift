@@ -21,9 +21,9 @@ public extension BufferLayout {
         
         var pointer: Int = 0
         for property in info.properties {
-            let instanceInfo = try typeInfo(of: property.type)
-            
             if Self.excludedPropertyNames.contains(property.name) {continue}
+            
+            let instanceInfo = try typeInfo(of: property.type)
             
             if let t = instanceInfo.type as? BufferLayoutProperty.Type
             {
@@ -61,7 +61,8 @@ public extension BufferLayout {
                 let newValue = try t.fromBytes(
                     bytes: data
                         .bytes[pointer+lengthSpan..<pointer+lengthSpan+length]
-                        .toArray()
+                        .toArray(),
+                    length: length
                 )
                 
                 let newProperty = try info.property(named: property.name)
@@ -74,22 +75,40 @@ public extension BufferLayout {
         self = selfInstance
     }
     
+    func encode() throws -> Data {
+        let info = try typeInfo(of: Self.self)
+        var data = Data()
+        for property in info.properties {
+            if Self.excludedPropertyNames.contains(property.name) {continue}
+            let instance = try property.get(from: self)
+            if let instance = instance as? BufferLayoutProperty
+            {
+                data.append(try instance.encode())
+            } else if let instance = instance as? BufferLayoutVectorType
+            {
+                data.append(try instance.encode())
+            }
+        }
+        return data
+    }
+    
     static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws {}
     static var excludedPropertyNames: [String] {[]}
     
-    static func getBufferLength() throws -> Int {
-        guard let info = try? typeInfo(of: Self.self) else {return 0}
-        var numberOfBytes = 0
-        for property in info.properties {
-            guard let instanceInfo = try? typeInfo(of: property.type) else {return 0}
-            if let t = instanceInfo.type as? BufferLayoutProperty.Type,
-               !Self.excludedPropertyNames.contains(property.name)
-            {
-                numberOfBytes += t.numberOfBytes
-            }
-        }
-        return numberOfBytes
-    }
+//    @available(*, deprecated, message: "Not work with vector")
+//    static func getBufferLength() throws -> Int {
+//        guard let info = try? typeInfo(of: Self.self) else {return 0}
+//        var numberOfBytes = 0
+//        for property in info.properties {
+//            guard let instanceInfo = try? typeInfo(of: property.type) else {return 0}
+//            if let t = instanceInfo.type as? BufferLayoutProperty.Type,
+//               !Self.excludedPropertyNames.contains(property.name)
+//            {
+//                numberOfBytes += t.numberOfBytes
+//            }
+//        }
+//        return numberOfBytes
+//    }
 }
 
 // MARK: - Helpers
