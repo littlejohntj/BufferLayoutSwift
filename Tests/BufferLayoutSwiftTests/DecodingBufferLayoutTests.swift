@@ -5,6 +5,7 @@ import Runtime
 // MARK: - Structs
 private struct UIntTest: BufferLayout {
     // parsable
+    let vecu8: VecU8
     let uint8: UInt8
     let uint16: UInt16 // excluded -> default to 0
     let uint32: UInt32?
@@ -55,12 +56,12 @@ class DecodingBufferLayoutTests: XCTestCase {
     func testDecodingBuildInSupportedTypes() throws {
         XCTAssertEqual(try UIntTest.getBufferLength(), 18)
         
-        let test = try UIntTest(buffer: Data([1,3,1,0,0,1,3,0,3,1,0,0,1,1,0,0,1,0]))
+        let test = try UIntTest(buffer: Data([3,0,0,0,1,2,3,1,3,0,0,0,1,3,0,3,1,0,0,1,1,0,0,1,0]))
+        XCTAssertEqual(test.vecu8.bytes, [1,2,3])
         XCTAssertEqual(test.uint8, 1)
         XCTAssertEqual(test.uint16, 0) // excluded
-        XCTAssertEqual(test.uint32, 259)
+        XCTAssertEqual(test.uint32, 3)
         XCTAssertEqual(test.uint64, 72057598383227649)
-        XCTAssertEqual(test.uint32, 259)
         XCTAssertEqual(test.bool, false)
         XCTAssertEqual(test.string, "test")
     }
