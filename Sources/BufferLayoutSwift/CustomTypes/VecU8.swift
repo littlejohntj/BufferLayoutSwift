@@ -7,12 +7,11 @@
 
 import Foundation
 
-struct VecU8: BufferLayoutVectorType {
-    static func fromBytes(bytes: [UInt8]) throws -> VecU8 {
-        let data = Data(capacity: bytes.count)
-        return .init(data: data)
+public struct VecU8: BufferLayoutVectorType {
+    public static func fromBytes(bytes: [UInt8]) throws -> VecU8 {
+        return .init(bytes: bytes)
     }
     
-    static var numberOfBytesToStoreLength: Int {4}
-    let data: Data
+    public static var numberOfBytesToStoreLength: Int {4}
+    public let bytes: [UInt8]
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol BufferLayoutVectorType {
+public protocol BufferLayoutVectorType {
     static var numberOfBytesToStoreLength: Int {get}
     static func fromBytes(bytes: [UInt8]) throws -> Self
 }
@@ -69,7 +69,7 @@ extension Array where Element == UInt8 {
     
     func toInt() -> Int {
         var value: Int = 0
-        for byte in self {
+        for byte in self.reversed() {
             value = value << 8
             value = value | Int(byte)
         }
