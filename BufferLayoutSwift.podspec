@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'BufferLayoutSwift'
-  s.version          = '0.4.0'
+  s.version          = '0.4.1'
   s.summary          = 'An implementation of BufferLayout written in PureSwift.'
 
 # This description is used to generate tags and improve search results.
@@ -29,7 +29,7 @@ BufferLayoutSwift helps you turn sequence of data into struct by conforming this
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '12.0'
-  s.swift_version = '5.0'
+  s.swift_versions = '5.0'
 
   s.source_files = 'BufferLayoutSwift/Classes/**/*'
   
@@ -40,5 +40,5 @@ BufferLayoutSwift helps you turn sequence of data into struct by conforming this
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
   # s.dependency 'AFNetworking', '~> 2.3'
-  s.dependency 'Runtime'
+  s.dependency 'Runtime', '~> 2.2.2'
 end

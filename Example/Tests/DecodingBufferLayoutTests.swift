@@ -53,6 +53,8 @@ class DecodingBufferLayoutTests: XCTestCase {
     }
     
     func testDecodingBuildInSupportedTypes() throws {
+        XCTAssertEqual(try UIntTest.getBufferLength(), 18)
+        
         let test = try UIntTest(buffer: Data([1,3,1,0,0,1,3,0,3,1,0,0,1,1,0,0,1,0]))
         XCTAssertEqual(test.uint8, 1)
         XCTAssertEqual(test.uint16, 0) // excluded
