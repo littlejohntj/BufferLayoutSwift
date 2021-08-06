@@ -1,6 +1,0 @@
-framework module BufferLayoutSwift {
-  umbrella header "BufferLayoutSwift-umbrella.h"
-
-  export *
-  module * { export * }
-}

@@ -1,6 +1,0 @@
-use_frameworks!
-target 'BufferLayoutSwift_Tests' do
-  pod 'BufferLayoutSwift', :path => '../'
-  
-  
-end
