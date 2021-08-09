@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'BufferLayoutSwift'
-  s.version          = '0.6.0'
+  s.version          = '0.7.0'
   s.summary          = 'An implementation of BufferLayout written in PureSwift.'
 
 # This description is used to generate tags and improve search results.
