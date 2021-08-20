@@ -28,7 +28,7 @@ extension BufferLayoutVectorType {
 
 // MARK: - Property
 public protocol BufferLayoutProperty {
-    static var numberOfBytes: Int {get}
+    static func getNumberOfBytes() throws -> Int
     init(buffer: Data) throws
     func encode() throws -> Data
 }
@@ -44,18 +44,18 @@ extension Int32: BufferLayoutProperty {}
 extension Int64: BufferLayoutProperty {}
 
 extension FixedWidthInteger {
-    public static var numberOfBytes: Int {
+    public static func getNumberOfBytes() throws -> Int {
         MemoryLayout<Self>.size
     }
     
     public init(buffer: Data) throws {
-        guard buffer.count == Self.numberOfBytes else {
+        guard buffer.count == (try Self.getNumberOfBytes()) else {
             throw Error.bytesLengthIsNotValid
         }
         self = [UInt8](buffer).toUInt(ofType: Self.self)
     }
     public static func fromBytes(bytes: [UInt8]) throws -> Self {
-        guard bytes.count == numberOfBytes else {
+        guard bytes.count == (try Self.getNumberOfBytes()) else {
             throw Error.bytesLengthIsNotValid
         }
         return bytes.toUInt(ofType: Self.self)
@@ -68,7 +68,7 @@ extension FixedWidthInteger {
 }
 
 extension Bool: BufferLayoutProperty {
-    public static var numberOfBytes: Int { 1 }
+    public static func getNumberOfBytes() throws -> Int { 1 }
     
     public init(buffer: Data) throws {
         let bytes = [UInt8](buffer)
@@ -85,13 +85,14 @@ extension Bool: BufferLayoutProperty {
 }
 
 extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
-    public static var numberOfBytes: Int {
-        Wrapped.numberOfBytes
+    
+    public static func getNumberOfBytes() throws -> Int {
+        try Wrapped.getNumberOfBytes()
     }
     
     public init(buffer: Data) throws {
         let bytes = [UInt8](buffer)
-        guard bytes.count == Self.numberOfBytes else {self = nil;return}
+        guard bytes.count == (try Self.getNumberOfBytes()) else {self = nil;return}
         self = try? Wrapped(buffer: buffer)
     }
     

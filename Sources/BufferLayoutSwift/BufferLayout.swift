@@ -27,17 +27,18 @@ public extension BufferLayout {
             
             if let t = instanceInfo.type as? BufferLayoutProperty.Type
             {
-                guard pointer+t.numberOfBytes <= data.bytes.count else {
+                let numberOfBytes = try t.getNumberOfBytes()
+                guard pointer+numberOfBytes <= data.bytes.count else {
                     throw Error.bytesLengthIsNotValid
                 }
                 let newValue = try t.init(
-                    buffer: Data(data[pointer..<pointer+t.numberOfBytes])
+                    buffer: Data(data[pointer..<pointer+numberOfBytes])
                 )
                 
                 let newProperty = try info.property(named: property.name)
                 try newProperty.set(value: newValue, on: &selfInstance)
                 
-                pointer += t.numberOfBytes
+                pointer += numberOfBytes
             } else if let t = instanceInfo.type as? BufferLayoutVectorType.Type
             {
                 // get length
@@ -93,30 +94,26 @@ public extension BufferLayout {
     static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws {}
     static var excludedPropertyNames: [String] {[]}
     
-    @available(*, deprecated, message: "Not work with vectors", renamed: "getBufferLayoutPropertyLengths")
+    @available(*, deprecated, message: "Not work with vectors", renamed: "getNumberOfBytes")
     static func getBufferLength() throws -> Int {
-        getBufferlayoutPropertyLengths()
+        try getNumberOfBytes()
     }
     
-    static func getBufferlayoutPropertyLengths() -> Int {
-        guard let info = try? typeInfo(of: Self.self) else {return 0}
+    static func getNumberOfBytes() throws -> Int {
+        let info = try typeInfo(of: Self.self)
         var numberOfBytes = 0
         for property in info.properties {
             guard let instanceInfo = try? typeInfo(of: property.type) else {return 0}
             if let t = instanceInfo.type as? BufferLayoutProperty.Type,
                !Self.excludedPropertyNames.contains(property.name)
             {
-                numberOfBytes += t.numberOfBytes
+                numberOfBytes += (try t.getNumberOfBytes())
             } else if instanceInfo.type is BufferLayoutVectorType.Type
             {
                 fatalError("Vector length can not be pre-defined")
             }
         }
         return numberOfBytes
-    }
-    
-    static var numberOfBytes: Int {
-        getBufferlayoutPropertyLengths()
     }
 }
 
