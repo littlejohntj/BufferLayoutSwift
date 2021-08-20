@@ -12,42 +12,74 @@ This library is a clear way to parse sequence of bytes (Data) into your custom s
 
 To run the tests, clone the repo, and run `pod install` from the Example directory first.
 
-Example decoding MyStruct from sequence of bytes (`Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0,1,1,0,0,1,0])`)
+Example decoding a struct from sequence of bytes:
+```swift
+let bytes: [UInt8] = [
+    3,0,0,0,1,2,3, // a vector with length = 3 (3,0,0,0) 
+    4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // uint128
+    1, // uint8
+        1, // uint8 (nested)
+            0,0, // uint16 (nestedOfNested)
+            3,0,0,0, // uint32 (nestedOfNested)
+        1,3,0,3,1,0,0,1, //uint64 (nested)
+    3,0,0,0, // uint32
+    1,3,0,3,1,0,0,1, // uint64?
+    1,0,0,1,
+    0 // bool
+]
+```
 
 ```swift
-private struct MyStruct: BufferLayout {
+private struct MyNumberCollection: BufferLayout {
     // parsable
+    let vecu8: VecU8
+    let uint128: UInt128
     let uint8: UInt8
     let uint16: UInt16 // excluded -> default to 0
+    let nested: MyNestedNumberCollection
     let uint32: UInt32?
     let uint64: UInt64
     let int32: Int32
     let bool: Bool
     
-    static var excludedPropertyNames: [String] {["uint16"]}
-
     // non-parsable part
     var optionalString: String?
     let string: String
-    var exGetter: Int {0}
-    func exFunc() {}
-
-    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout MyStruct) throws {
+    
+    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout MyNumberCollection) throws {
         let stringProp = try typeInfo.property(named: "string")
         try stringProp.set(value: "test", on: &currentInstance)
     }
+    
+    static var excludedPropertyNames: [String] {["uint16"]}
+}
+
+private struct MyNestedNumberCollection: BufferLayout, Equatable {
+    let uint8: UInt8
+    let nested: MyNestedOfNestedNumberCollection
+    let uint64: UInt64
+}
+
+private struct MyNestedOfNestedNumberCollection: BufferLayout, Equatable {
+    let uint16: UInt16
+    let uint32: UInt32
 }
 ```
 
 ```swift
-let test = try MyStruct(buffer: Data([1,3,1,0,0,1,3,0,3,1,0,0,1,1,0,0,1,0]))
+let test = try MyNumberCollection(buffer: Data(array))
+XCTAssertEqual(test.vecu8.length, 3)
+XCTAssertEqual(test.vecu8.bytes, [1,2,3])
+XCTAssertEqual(test.uint128, 4)
 XCTAssertEqual(test.uint8, 1)
-XCTAssertEqual(test.uint16, 0)
-XCTAssertEqual(test.uint32, 259)
+XCTAssertEqual(test.uint16, 0) // excluded
+XCTAssertEqual(test.nested, .init(uint8: 1, nested: .init(uint16: 0, uint32: 3) , uint64: 72057598383227649))
+XCTAssertEqual(test.uint32, 3)
 XCTAssertEqual(test.uint64, 72057598383227649)
-XCTAssertEqual(test.uint32, 259)
 XCTAssertEqual(test.bool, false)
 XCTAssertEqual(test.string, "test")
+
+XCTAssertEqual([UInt8](try test.encode()), array)
 ```
 
 ## Requirements
@@ -99,7 +131,7 @@ Now you can create instances of `MyStruct` by calling fallable `init(data: Data)
 
 ## Supported `BufferLayoutProperty`:
 
-There are some prefined `BufferLayoutProperty` 
+There are some prefined `BufferLayoutProperty` , note that `BufferLayout` is also conform to `BufferLayoutProperty` for recursion.
 
 ```swift
 extension UInt8: BufferLayoutProperty {}
@@ -120,14 +152,19 @@ You can define custom `BufferLayoutProperty` by conforming your type to `BufferL
 
 ```swift
 extension PublicKey: BufferLayoutProperty {
-    public static var numberOfBytes: Int {
+    public static func getNumberOfBytes() throws -> Int {
         32
     }
-    public static func fromBytes(bytes: [UInt8]) throws -> PublicKey {
+
+    public init(buffer: Data) throws {
         guard bytes.count == numberOfBytes else {
             throw BufferLayoutSwift.Error.bytesLengthIsNotValid
         }
         // return public key from data
+        self = buffer.toPublicKey()
+    }
+
+    public func encode() throws -> Data {
         ...
     }
 }

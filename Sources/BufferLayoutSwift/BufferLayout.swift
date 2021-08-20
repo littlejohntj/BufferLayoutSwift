@@ -110,7 +110,7 @@ public extension BufferLayout {
                 numberOfBytes += (try t.getNumberOfBytes())
             } else if instanceInfo.type is BufferLayoutVectorType.Type
             {
-                fatalError("Vector length can not be pre-defined")
+                throw Error.layoutContainsAVectorWhoseLengthCanNotBePredefined
             }
         }
         return numberOfBytes

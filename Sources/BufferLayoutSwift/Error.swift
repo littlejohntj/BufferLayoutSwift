@@ -10,4 +10,5 @@ import Foundation
 public enum Error: Swift.Error {
     case bytesLengthIsNotValid
     case unsupportedType(type: Any.Type, propertyName: String)
+    case layoutContainsAVectorWhoseLengthCanNotBePredefined
 }

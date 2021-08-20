@@ -54,12 +54,6 @@ extension FixedWidthInteger {
         }
         self = [UInt8](buffer).toUInt(ofType: Self.self)
     }
-    public static func fromBytes(bytes: [UInt8]) throws -> Self {
-        guard bytes.count == (try Self.getNumberOfBytes()) else {
-            throw Error.bytesLengthIsNotValid
-        }
-        return bytes.toUInt(ofType: Self.self)
-    }
     
     public func encode() throws -> Data {
         var int = self
