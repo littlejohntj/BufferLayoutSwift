@@ -7,6 +7,7 @@
 
 import Foundation
 
+// MARK: - Vector
 public protocol BufferLayoutVectorType {
     static var numberOfBytesToStoreLength: Int {get}
     static func fromBytes(bytes: [UInt8], length: Int) throws -> Self
@@ -25,9 +26,10 @@ extension BufferLayoutVectorType {
     }
 }
 
+// MARK: - Property
 public protocol BufferLayoutProperty {
     static var numberOfBytes: Int {get}
-    static func fromBytes(bytes: [UInt8]) throws -> Self
+    init(buffer: Data) throws
     func encode() throws -> Data
 }
 
@@ -45,6 +47,13 @@ extension FixedWidthInteger {
     public static var numberOfBytes: Int {
         MemoryLayout<Self>.size
     }
+    
+    public init(buffer: Data) throws {
+        guard buffer.count == Self.numberOfBytes else {
+            throw Error.bytesLengthIsNotValid
+        }
+        self = [UInt8](buffer).toUInt(ofType: Self.self)
+    }
     public static func fromBytes(bytes: [UInt8]) throws -> Self {
         guard bytes.count == numberOfBytes else {
             throw Error.bytesLengthIsNotValid
@@ -61,11 +70,12 @@ extension FixedWidthInteger {
 extension Bool: BufferLayoutProperty {
     public static var numberOfBytes: Int { 1 }
     
-    public static func fromBytes(bytes: [UInt8]) throws -> Bool {
+    public init(buffer: Data) throws {
+        let bytes = [UInt8](buffer)
         guard bytes.count == 1 else {
             throw Error.bytesLengthIsNotValid
         }
-        return bytes.first! != 0
+        self = bytes.first! != 0
     }
     
     public func encode() throws -> Data {
@@ -79,9 +89,10 @@ extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
         Wrapped.numberOfBytes
     }
     
-    public static func fromBytes(bytes: [UInt8]) throws -> Optional<Wrapped> {
-        guard bytes.count == numberOfBytes else {return nil}
-        return try? Wrapped.fromBytes(bytes: bytes)
+    public init(buffer: Data) throws {
+        let bytes = [UInt8](buffer)
+        guard bytes.count == Self.numberOfBytes else {self = nil;return}
+        self = try? Wrapped(buffer: buffer)
     }
     
     public func encode() throws -> Data {

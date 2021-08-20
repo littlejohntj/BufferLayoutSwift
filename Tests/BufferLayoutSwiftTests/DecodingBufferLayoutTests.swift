@@ -6,12 +6,13 @@ import Runtime
 extension UInt128: BufferLayoutProperty {
     
 }
-private struct UIntTest: BufferLayout {
+private struct MyNumberCollection: BufferLayout {
     // parsable
     let vecu8: VecU8
     let uint128: UInt128
     let uint8: UInt8
     let uint16: UInt16 // excluded -> default to 0
+    let nested: MyNestedNumberCollection
     let uint32: UInt32?
     let uint64: UInt64
     let int32: Int32
@@ -23,12 +24,23 @@ private struct UIntTest: BufferLayout {
     var exGetter: Int {0}
     func exFunc() {}
     
-    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout UIntTest) throws {
+    static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout MyNumberCollection) throws {
         let stringProp = try typeInfo.property(named: "string")
         try stringProp.set(value: "test", on: &currentInstance)
     }
     
     static var excludedPropertyNames: [String] {["uint16"]}
+}
+
+private struct MyNestedNumberCollection: BufferLayout, Equatable {
+    let uint8: UInt8
+    let nested: MyNestedOfNestedNumberCollection
+    let uint64: UInt64
+}
+
+private struct MyNestedOfNestedNumberCollection: BufferLayout, Equatable {
+    let uint16: UInt16
+    let uint32: UInt32
 }
 
 private struct UnsupportedIntTest: BufferLayout {
@@ -54,7 +66,7 @@ class DecodingBufferLayoutTests: XCTestCase {
     
     func testDecodingFailed() throws {
         // not enough bytes
-        XCTAssertThrowsError(try UIntTest(buffer: Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0])))
+        XCTAssertThrowsError(try MyNumberCollection(buffer: Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0])))
     }
     
     func testDecodingBuildInSupportedTypes() throws {
@@ -62,17 +74,22 @@ class DecodingBufferLayoutTests: XCTestCase {
             3,0,0,0,1,2,3, // vecu8
             4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // uint128
             1, // uint8
+                1, // uint8 (nested)
+                    0,0, // uint16 (nestedOfNested)
+                    3,0,0,0, // uint32 (nestedOfNested)
+                1,3,0,3,1,0,0,1, //uint64 (nested)
             3,0,0,0, // uint32
             1,3,0,3,1,0,0,1, // uint64?
             1,0,0,1,
             0 // bool
         ]
-        let test = try UIntTest(buffer: Data(array))
+        let test = try MyNumberCollection(buffer: Data(array))
         XCTAssertEqual(test.vecu8.length, 3)
         XCTAssertEqual(test.vecu8.bytes, [1,2,3])
         XCTAssertEqual(test.uint128, 4)
         XCTAssertEqual(test.uint8, 1)
         XCTAssertEqual(test.uint16, 0) // excluded
+        XCTAssertEqual(test.nested, .init(uint8: 1, nested: .init(uint16: 0, uint32: 3) , uint64: 72057598383227649))
         XCTAssertEqual(test.uint32, 3)
         XCTAssertEqual(test.uint64, 72057598383227649)
         XCTAssertEqual(test.bool, false)

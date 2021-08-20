@@ -9,7 +9,7 @@ import Foundation
 import Runtime
 
 // MARK: - BufferLayout
-public protocol BufferLayout {
+public protocol BufferLayout: BufferLayoutProperty {
     static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws
     static var excludedPropertyNames: [String] {get}
 }
@@ -30,10 +30,8 @@ public extension BufferLayout {
                 guard pointer+t.numberOfBytes <= data.bytes.count else {
                     throw Error.bytesLengthIsNotValid
                 }
-                let newValue = try t.fromBytes(
-                    bytes: data
-                        .bytes[pointer..<pointer+t.numberOfBytes]
-                        .toArray()
+                let newValue = try t.init(
+                    buffer: Data(data[pointer..<pointer+t.numberOfBytes])
                 )
                 
                 let newProperty = try info.property(named: property.name)
@@ -109,9 +107,16 @@ public extension BufferLayout {
                !Self.excludedPropertyNames.contains(property.name)
             {
                 numberOfBytes += t.numberOfBytes
+            } else if instanceInfo.type is BufferLayoutVectorType.Type
+            {
+                fatalError("Vector length can not be pre-defined")
             }
         }
         return numberOfBytes
+    }
+    
+    static var numberOfBytes: Int {
+        getBufferlayoutPropertyLengths()
     }
 }
 
