@@ -46,7 +46,7 @@ public protocol Serializer {
     /// `singleValueContainer()`
     ///
     /// - returns: A new empty single value container.
-    func singleValueContainer() -> SingleValueEncodingContainer
+    func singleValueContainer() -> SingleValueSerializingContainer
 }
 
 /// A concrete container that provides a view into an encoder's storage, making
@@ -153,10 +153,10 @@ public protocol UnkeyedSerializingContainer {
 
 /// A container that can support the storage and direct encoding of a single
 /// non-keyed value.
-public protocol SingleValueEncodingContainer {
+public protocol SingleValueSerializingContainer {
 
     /// The path of coding keys taken to get to this point in encoding.
     var codingPath: [CodingKey] { get }
 
-    mutating func deserialize<T: Serializable>(_ value: T) throws
+    mutating func serialize<T: Serializable>(_ value: T) throws
 }
