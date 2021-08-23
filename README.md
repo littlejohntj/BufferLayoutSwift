@@ -30,6 +30,26 @@ let bytes: [UInt8] = [
 ```
 
 ```swift
+private struct VecU8: BufferLayoutProperty {
+    let length: UInt32
+    let bytes: [UInt8]
+    
+    static func fromData(_ data: Data) throws -> (value: VecU8, bytesUsed: Int) {
+        // first 4 bytes for length
+        let length = try UInt32.fromData(data).value
+        guard data.count >= 4+Int(length) else {
+            throw BufferLayoutSwift.Error.bytesLengthIsNotValid
+        }
+        let value = VecU8(length: length, bytes: Array(data[4..<4+Int(length)]))
+        return (value: value, bytesUsed: 4 + Int(length))
+    }
+    
+    func encode() throws -> Data {
+        try length.encode() +
+        Data(bytes)
+    }
+}
+
 private struct MyNumberCollection: BufferLayout {
     // parsable
     let vecu8: VecU8
@@ -67,8 +87,7 @@ private struct MyNestedOfNestedNumberCollection: BufferLayout, Equatable {
 ```
 
 ```swift
-let test = try MyNumberCollection(buffer: Data(array))
-XCTAssertEqual(test.vecu8.length, 3)
+let test = try MyNumberCollection.fromData(Data(array)).value
 XCTAssertEqual(test.vecu8.bytes, [1,2,3])
 XCTAssertEqual(test.uint128, 4)
 XCTAssertEqual(test.uint8, 1)

@@ -13,7 +13,10 @@ private struct VecU8: BufferLayoutProperty {
     static func fromData(_ data: Data) throws -> (value: VecU8, bytesUsed: Int) {
         // first 4 bytes for length
         let length = try UInt32.fromData(data).value
-        let value = VecU8(length: length, bytes: Array(data[4..<7]))
+        guard data.count >= 4+Int(length) else {
+            throw BufferLayoutSwift.Error.bytesLengthIsNotValid
+        }
+        let value = VecU8(length: length, bytes: Array(data[4..<4+Int(length)]))
         return (value: value, bytesUsed: 4 + Int(length))
     }
     
