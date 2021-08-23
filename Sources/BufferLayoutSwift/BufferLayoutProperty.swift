@@ -7,29 +7,8 @@
 
 import Foundation
 
-// MARK: - Vector
-public protocol BufferLayoutVectorType {
-    static var numberOfBytesToStoreLength: Int {get}
-    static func fromBytes(bytes: [UInt8], length: Int) throws -> Self
-    var length: Int {get}
-    var bytes: [UInt8] {get}
-    func encode() throws -> Data
-}
-
-extension BufferLayoutVectorType {
-    public func encode() throws -> Data {
-        var data = Data(capacity: Self.numberOfBytesToStoreLength + bytes.count)
-        var int = length
-        data.append(contentsOf: Data(bytes: &int, count: Self.numberOfBytesToStoreLength))
-        data.append(contentsOf: bytes)
-        return data
-    }
-}
-
-// MARK: - Property
 public protocol BufferLayoutProperty {
-    static func getNumberOfBytes() throws -> Int
-    init(buffer: Data) throws
+    static func fromData(_ data: Data) throws -> (value: Self, bytesUsed: Int)
     func encode() throws -> Data
 }
 
@@ -44,15 +23,13 @@ extension Int32: BufferLayoutProperty {}
 extension Int64: BufferLayoutProperty {}
 
 extension FixedWidthInteger {
-    public static func getNumberOfBytes() throws -> Int {
-        MemoryLayout<Self>.size
-    }
-    
-    public init(buffer: Data) throws {
-        guard buffer.count == (try Self.getNumberOfBytes()) else {
+    public static func fromData(_ data: Data) throws -> (value: Self, bytesUsed: Int) {
+        let size = MemoryLayout<Self>.size
+        guard data.count >= size else {
             throw Error.bytesLengthIsNotValid
         }
-        self = [UInt8](buffer).toUInt(ofType: Self.self)
+        let data = Array(data[0..<size])
+        return (value: data.toUInt(ofType: Self.self), bytesUsed: size)
     }
     
     public func encode() throws -> Data {
@@ -62,14 +39,11 @@ extension FixedWidthInteger {
 }
 
 extension Bool: BufferLayoutProperty {
-    public static func getNumberOfBytes() throws -> Int { 1 }
-    
-    public init(buffer: Data) throws {
-        let bytes = [UInt8](buffer)
-        guard bytes.count == 1 else {
+    public static func fromData(_ data: Data) throws -> (value: Bool, bytesUsed: Int) {
+        guard data.count >= 1 else {
             throw Error.bytesLengthIsNotValid
         }
-        self = bytes.first! != 0
+        return (value: data.first! != 0, bytesUsed: 1)
     }
     
     public func encode() throws -> Data {
@@ -79,15 +53,11 @@ extension Bool: BufferLayoutProperty {
 }
 
 extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
-    
-    public static func getNumberOfBytes() throws -> Int {
-        try Wrapped.getNumberOfBytes()
-    }
-    
-    public init(buffer: Data) throws {
-        let bytes = [UInt8](buffer)
-        guard bytes.count == (try Self.getNumberOfBytes()) else {self = nil;return}
-        self = try? Wrapped(buffer: buffer)
+    public static func fromData(_ data: Data) throws -> (value: Optional<Wrapped>, bytesUsed: Int) {
+        guard let wrapped = try? Wrapped.fromData(data) else {
+            return (value: nil, bytesUsed: 0)
+        }
+        return wrapped
     }
     
     public func encode() throws -> Data {
