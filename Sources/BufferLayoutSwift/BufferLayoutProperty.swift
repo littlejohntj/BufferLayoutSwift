@@ -7,10 +7,15 @@
 
 import Foundation
 
-public protocol BufferLayoutProperty {
-    static func fromData(_ data: Data) throws -> (value: Self, bytesUsed: Int)
-    func encode() throws -> Data
+public protocol BufferLayoutSerializable {
+    func serialize() throws -> Data
 }
+
+public protocol BufferLayoutDeserializable {
+    init(buffer: Data, pointer: inout Int) throws
+}
+
+public typealias BufferLayoutProperty = BufferLayoutSerializable & BufferLayoutDeserializable
 
 extension UInt8: BufferLayoutProperty {}
 extension UInt16: BufferLayoutProperty {}
@@ -23,46 +28,50 @@ extension Int32: BufferLayoutProperty {}
 extension Int64: BufferLayoutProperty {}
 
 extension FixedWidthInteger {
-    public static func fromData(_ data: Data) throws -> (value: Self, bytesUsed: Int) {
+    public init(buffer: Data, pointer: inout Int) throws {
         let size = MemoryLayout<Self>.size
-        guard data.count >= size else {
+        guard buffer.count >= size else {
             throw Error.bytesLengthIsNotValid
         }
-        let data = Array(data[0..<size])
-        return (value: data.toUInt(ofType: Self.self), bytesUsed: size)
+        let data = Array(buffer[pointer..<pointer+size])
+        self = data.toUInt(ofType: Self.self)
+        pointer += size
+        
     }
     
-    public func encode() throws -> Data {
+    public func serialize() throws -> Data {
         var int = self
         return Data(bytes: &int, count: MemoryLayout<Self>.size)
     }
 }
 
 extension Bool: BufferLayoutProperty {
-    public static func fromData(_ data: Data) throws -> (value: Bool, bytesUsed: Int) {
-        guard data.count >= 1 else {
+    public init(buffer: Data, pointer: inout Int) throws {
+        guard buffer.count > pointer else {
             throw Error.bytesLengthIsNotValid
         }
-        return (value: data.first! != 0, bytesUsed: 1)
+        self = buffer[pointer] != 0
+        pointer += 1
     }
     
-    public func encode() throws -> Data {
+    public func serialize() throws -> Data {
         var int: [UInt8] = [self ? 1: 0]
         return Data(bytes: &int, count: 1)
     }
 }
 
 extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
-    public static func fromData(_ data: Data) throws -> (value: Optional<Wrapped>, bytesUsed: Int) {
-        guard let wrapped = try? Wrapped.fromData(data) else {
-            return (value: nil, bytesUsed: 0)
+    public init(buffer: Data, pointer: inout Int) throws {
+        guard let wrapped = try? Wrapped(buffer: buffer, pointer: &pointer) else {
+            self = nil
+            return
         }
-        return wrapped
+        self = wrapped
     }
     
-    public func encode() throws -> Data {
+    public func serialize() throws -> Data {
         guard let self = self else {return Data()}
-        return try self.encode()
+        return try self.serialize()
     }
 }
 

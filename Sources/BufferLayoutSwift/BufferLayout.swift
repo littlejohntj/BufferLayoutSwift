@@ -15,50 +15,40 @@ public protocol BufferLayout: BufferLayoutProperty {
 }
 
 public extension BufferLayout {
-    static func fromData(_ data: Data) throws -> (value: Self, bytesUsed: Int) {
+    init(buffer: Data, pointer: inout Int) throws {
         let info = try typeInfo(of: Self.self)
         var selfInstance: Self = try createInstance()
         
-        var data = data
-        var bytesUsed = 0
         for property in info.properties {
             if Self.excludedPropertyNames.contains(property.name) {continue}
             
             let instanceInfo = try typeInfo(of: property.type)
             
-            if let t = instanceInfo.type as? BufferLayoutProperty.Type
+            if let t = instanceInfo.type as? BufferLayoutDeserializable.Type
             {
-                let createInstance = try t.fromData(data)
-                let newValue = createInstance.value
-                
-                let newProperty = try info.property(named: property.name)
-                try newProperty.set(value: newValue, on: &selfInstance)
-                
-                let bytesUsedByT = createInstance.bytesUsed
-                bytesUsed += bytesUsedByT
-                
-                if bytesUsedByT > data.count {
+                if pointer > buffer.count {
                     throw Error.bytesLengthIsNotValid
                 }
                 
-                data = Data(Array(data[bytesUsedByT...]))
+                let newValue = try t.init(buffer: buffer, pointer: &pointer)
                 
+                let newProperty = try info.property(named: property.name)
+                try newProperty.set(value: newValue, on: &selfInstance)
             }
         }
         try Self.injectOtherProperties(typeInfo: info, currentInstance: &selfInstance)
-        
-        return (value: selfInstance, bytesUsed: bytesUsed)
+        self = selfInstance
     }
     
-    func encode() throws -> Data {
+    func serialize() throws -> Data {
         let info = try typeInfo(of: Self.self)
         var data = Data()
         for property in info.properties {
             if Self.excludedPropertyNames.contains(property.name) {continue}
             let instance = try property.get(from: self)
-            if let instance = instance as? BufferLayoutProperty
+            if let instance = instance as? BufferLayoutSerializable
             {
-                data.append(try instance.encode())
+                data.append(try instance.serialize())
             }
         }
         return data

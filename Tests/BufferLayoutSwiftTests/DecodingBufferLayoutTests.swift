@@ -10,18 +10,18 @@ private struct VecU8: BufferLayoutProperty {
     let length: UInt32
     let bytes: [UInt8]
     
-    static func fromData(_ data: Data) throws -> (value: VecU8, bytesUsed: Int) {
-        // first 4 bytes for length
-        let length = try UInt32.fromData(data).value
-        guard data.count >= 4+Int(length) else {
+    init(buffer: Data, pointer: inout Int) throws {
+        let length = try UInt32(buffer: buffer, pointer: &pointer)
+        guard buffer.count >= 4 + Int(length) else {
             throw BufferLayoutSwift.Error.bytesLengthIsNotValid
         }
-        let value = VecU8(length: length, bytes: Array(data[4..<4+Int(length)]))
-        return (value: value, bytesUsed: 4 + Int(length))
+        self.length = length
+        self.bytes = Array(buffer[pointer..<pointer+Int(length)])
+        pointer += Int(length)
     }
     
-    func encode() throws -> Data {
-        try length.encode() +
+    func serialize() throws -> Data {
+        try length.serialize() +
         Data(bytes)
     }
 }
@@ -71,7 +71,7 @@ private struct UnsupportedIntTest: BufferLayout {
 }
 
 // MARK: - Tests
-class DecodingBufferLayoutTests: XCTestCase {
+class BufferLayoutTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
@@ -83,12 +83,15 @@ class DecodingBufferLayoutTests: XCTestCase {
         super.tearDown()
     }
     
-    func testDecodingFailed() throws {
+    func testDeserializingFailed() throws {
         // not enough bytes
-        XCTAssertThrowsError(try MyNumberCollection.fromData(Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0])))
+        var pointer = 0
+        XCTAssertThrowsError(try MyNumberCollection.init(
+                                buffer: Data([1,3,0,3,1,0,0,1,3,0,3,1,0,0]),
+                                pointer: &pointer))
     }
     
-    func testDecodingBuildInSupportedTypes() throws {
+    func testSerializingAndDeserializing() throws {
         let array: [UInt8] = [
             3,0,0,0,1,2,3, // vecu8
             4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // uint128
@@ -102,7 +105,8 @@ class DecodingBufferLayoutTests: XCTestCase {
             1,0,0,1,
             0 // bool
         ]
-        let test = try MyNumberCollection.fromData(Data(array)).value
+        var pointer = 0
+        let test = try MyNumberCollection(buffer: Data(array), pointer: &pointer)
         XCTAssertEqual(test.vecu8.bytes, [1,2,3])
         XCTAssertEqual(test.uint128, 4)
         XCTAssertEqual(test.uint8, 1)
@@ -113,6 +117,6 @@ class DecodingBufferLayoutTests: XCTestCase {
         XCTAssertEqual(test.bool, false)
         XCTAssertEqual(test.string, "test")
         
-        XCTAssertEqual([UInt8](try test.encode()), array)
+        XCTAssertEqual([UInt8](try test.serialize()), array)
     }
 }
