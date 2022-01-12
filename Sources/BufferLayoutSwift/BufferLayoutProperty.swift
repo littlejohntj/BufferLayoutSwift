@@ -62,7 +62,11 @@ extension Bool: BufferLayoutProperty {
 
 extension Optional: BufferLayoutProperty where Wrapped: BufferLayoutProperty {
     public init(buffer: Data, pointer: inout Int) throws {
-        guard let wrapped = try? Wrapped(buffer: buffer, pointer: &pointer) else {
+        
+        let nullExistAtPointer = buffer[pointer] == 0
+        pointer += 1
+        
+        guard nullExistAtPointer == false, let wrapped = try? Wrapped(buffer: buffer, pointer: &pointer) else {
             self = nil
             return
         }
