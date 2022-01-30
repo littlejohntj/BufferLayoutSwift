@@ -30,6 +30,10 @@ public extension BufferLayout {
                     throw Error.bytesLengthIsNotValid
                 }
                 
+                if property.name == "creators" {
+                    pointer += 1
+                }
+                
                 let newValue = try t.init(buffer: buffer, pointer: &pointer)
                 
                 let newProperty = try info.property(named: property.name)
