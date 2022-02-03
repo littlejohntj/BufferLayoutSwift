@@ -37,9 +37,10 @@ public extension BufferLayout {
                 
                 if Self.optionalPropertyNames.contains(property.name) {
                     
+                    let nullExistAtPointer = buffer[pointer] == 0
                     pointer += 1
                     
-                    if buffer[pointer] == 0 {
+                    if nullExistAtPointer {
                         continue
                     }
                     
