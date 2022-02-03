@@ -12,6 +12,7 @@ import Runtime
 public protocol BufferLayout: BufferLayoutProperty {
     static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws
     static var excludedPropertyNames: [String] {get}
+    static var optionalPropertyNames: [String] {get}
 }
 
 public extension BufferLayout {
@@ -30,8 +31,18 @@ public extension BufferLayout {
                     throw Error.bytesLengthIsNotValid
                 }
                 
-                if property.name == "creators" {
+//                if property.name == "creators" {
+//                    pointer += 1
+//                }
+                
+                if Self.optionalPropertyNames.contains(property.name) {
+                    
                     pointer += 1
+                    
+                    if buffer[pointer] == 0 {
+                        continue
+                    }
+                    
                 }
                 
                 let newValue = try t.init(buffer: buffer, pointer: &pointer)
@@ -60,6 +71,7 @@ public extension BufferLayout {
     
     static func injectOtherProperties(typeInfo: TypeInfo, currentInstance: inout Self) throws {}
     static var excludedPropertyNames: [String] {[]}
+    static var optionalPropertyNames: [String] {[]}
 }
 
 // MARK: - Helpers
